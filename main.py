@@ -1,6 +1,11 @@
 import glob
 import os
 import time
+import pandas as pd
+
+import calendar
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -58,14 +63,49 @@ def get_CSV():
 
     #using mtime to get the latest file by modification time to allow for compatibility on UNIX systems
     latest_file = max(files, key=os.path.getmtime)
-    print(latest_file)
+
+    return latest_file
+
+def map_oecd_data():
+
+    csv_file = get_CSV()
+
+    df = pd.read_csv(csv_file, encoding="ISO-8859-1")
+
+    #getting our date 
+    six_months = date_converter(date.today() + relativedelta(months=-6))
+
+    three_months = date_converter(date.today() + relativedelta(months=-3))
+
+    one_month = date_converter(date.today() + relativedelta(months=-1))
+
+    current_month = date_converter(date.today() + relativedelta(months=+0))
+
+
+
+
+def date_converter(date):
+
+    #abbreviating the specified month to match the format in the CSV
+    month = date.strftime("%b")
+    # abbreviating the specified year to match the format in the CSV
+    year = date.strftime("%y")
+
+    #using f-strings to reassign date to an abbreviated format used in the CSV
+    date = (f"{month}-{year}")
+
+    return date
+
+
 
 def main():
 
     #running the functions to obtain the newest leading indicators
-    OECD_scraper()
+    #OECD_scraper()
     #running the function to obtain the most recently downloaded csv file
-    get_CSV()
+    map_oecd_data()
+
+
 
 main()
 
