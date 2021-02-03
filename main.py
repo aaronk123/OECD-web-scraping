@@ -13,14 +13,13 @@ from selenium.webdriver.common.by import By
 
 
 def OECD_scraper():
-
-    #specifying the ChromeDrivers Location
+    # specifying the ChromeDrivers Location
     driver = webdriver.Chrome('driver/chromedriver.exe')
 
-    #specifying the OECD indicators page we will scrape
+    # specifying the OECD indicators page we will scrape
     driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
 
-    #navigating to the csv download button and clicking download
+    # navigating to the csv download button and clicking download
     element = driver.find_element(By.ID, "export-icon")
     actions = ActionChains(driver)
     actions.double_click(element).perform()
@@ -30,15 +29,15 @@ def OECD_scraper():
     actions = ActionChains(driver)
     actions.double_click(element).perform()
 
-    #waiting a few seconds to allow the page to load
+    # waiting a few seconds to allow the page to load
 
     time.sleep(5)
-    #asking our webdriver to quit
+    # asking our webdriver to quit
     driver.quit()
 
-def get_download_path():
 
-    #Returns the default downloads path for linux or windows
+def get_download_path():
+    # Returns the default downloads path for linux or windows
     if os.name == 'nt':
         import winreg
         sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
@@ -49,30 +48,30 @@ def get_download_path():
     else:
         return os.path.join(os.path.expanduser('~'), 'downloads')
 
+
 def get_CSV():
+    # getting the path using our get_download_path() function
+    path = get_download_path()
 
-    #getting the path using our get_download_path() function
-    path=get_download_path()
-
-    #specifying we want to get a CSV file
+    # specifying we want to get a CSV file
     extension = 'csv'
     os.chdir(path)
 
-    #grabbing a list of files with our specified extension
+    # grabbing a list of files with our specified extension
     files = glob.glob('*.{}'.format(extension))
 
-    #using mtime to get the latest file by modification time to allow for compatibility on UNIX systems
+    # using mtime to get the latest file by modification time to allow for compatibility on UNIX systems
     latest_file = max(files, key=os.path.getmtime)
 
     return latest_file
 
-def map_oecd_data():
 
+def map_oecd_data():
     csv_file = get_CSV()
 
     df = pd.read_csv(csv_file, encoding="ISO-8859-1")
 
-    #getting our date 
+    # getting our date
     six_months = date_converter(date.today() + relativedelta(months=-6))
 
     three_months = date_converter(date.today() + relativedelta(months=-3))
@@ -81,31 +80,30 @@ def map_oecd_data():
 
     current_month = date_converter(date.today() + relativedelta(months=+0))
 
-
+    # Creating our dataframes based on relative time values
+    six_months_df = df.loc[df['Time'] == six_months]
+    three_months_df = df.loc[df['Time'] == three_months]
+    one_month_df = df.loc[df['Time'] == one_month]
+    current_month_df = df.loc[df['Time'] == current_month]
 
 
 def date_converter(date):
-
-    #abbreviating the specified month to match the format in the CSV
+    # abbreviating the specified month to match the format in the CSV
     month = date.strftime("%b")
     # abbreviating the specified year to match the format in the CSV
-    year = date.strftime("%y")
+    year = date.strftime("%Y")
 
-    #using f-strings to reassign date to an abbreviated format used in the CSV
+    # using f-strings to reassign date to an abbreviated format used in the CSV
     date = (f"{month}-{year}")
 
     return date
 
 
-
 def main():
-
-    #running the functions to obtain the newest leading indicators
-    #OECD_scraper()
-    #running the function to obtain the most recently downloaded csv file
+    # running the functions to obtain the newest leading indicators
+    # OECD_scraper()
+    # running the function to obtain the most recently downloaded csv file
     map_oecd_data()
 
 
-
 main()
-
