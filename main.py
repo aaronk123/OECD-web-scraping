@@ -2,6 +2,8 @@ import glob
 import os
 import time
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 import calendar
 from datetime import date
@@ -69,34 +71,24 @@ def get_CSV():
 def map_oecd_data():
     csv_file = get_CSV()
 
-    df = pd.read_csv(csv_file, encoding="ISO-8859-1")
+    df = pd.read_csv(csv_file, parse_dates=['Time'], index_col=['Time'], encoding="ISO-8859-1")
+    
 
-    # getting our date
-    six_months = date_converter(date.today() + relativedelta(months=-6))
+    # Stating which countries are in the Euro Area for our dataframe later on
+    euro_area= ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland', 'Italy', 'Latvia', 'Lithuania',
+               'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia', 'Spain']
 
-    three_months = date_converter(date.today() + relativedelta(months=-3))
+    # Creating our new dataframe composed of only countries in the Euro Zone
+    euDf=df[df['Country'].isin(euro_area)]
 
-    one_month = date_converter(date.today() + relativedelta(months=-1))
+    # Creating a dataframe consisting of only the United Kingdom
+    ukDf=df[df['Country'] == 'United Kingdom']
 
-    current_month = date_converter(date.today() + relativedelta(months=+0))
+    eu_percen_change = euDf['Value'].pct_change()*100
+    uk_percen_change = ukDf['Value'].pct_change()*100
 
-    # Creating our dataframes based on relative time values
-    six_months_df = df.loc[df['Time'] == six_months]
-    three_months_df = df.loc[df['Time'] == three_months]
-    one_month_df = df.loc[df['Time'] == one_month]
-    current_month_df = df.loc[df['Time'] == current_month]
-
-
-def date_converter(date):
-    # abbreviating the specified month to match the format in the CSV
-    month = date.strftime("%b")
-    # abbreviating the specified year to match the format in the CSV
-    year = date.strftime("%Y")
-
-    # using f-strings to reassign date to an abbreviated format used in the CSV
-    date = (f"{month}-{year}")
-
-    return date
+    print(euDf.head())
+    print(eu_percen_change)
 
 
 def main():
