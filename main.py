@@ -72,23 +72,70 @@ def map_oecd_data():
     csv_file = get_CSV()
 
     df = pd.read_csv(csv_file, parse_dates=['Time'], index_col=['Time'], encoding="ISO-8859-1")
-    
 
     # Stating which countries are in the Euro Area for our dataframe later on
-    euro_area= ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland', 'Italy', 'Latvia', 'Lithuania',
-               'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia', 'Spain']
+    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland', 'Italy',
+                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia', 'Spain']
 
     # Creating our new dataframe composed of only countries in the Euro Zone
-    euDf=df[df['Country'].isin(euro_area)]
+    euDf = df[df['Country'].isin(euro_area)]
+    euDf = euDf.reset_index()
+    euDf = euDf[['Country', 'TIME', 'Value']]
+    euDf = euDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
+
+    euDf = euDf.pivot(index='TIME', columns='Country', values='Value')
+    euDf.columns.name = ' '
+    euDf['EU Mean'] = euDf.mean(axis=1)
+    euDf = euDf.filter(['EU Mean'])
 
     # Creating a dataframe consisting of only the United Kingdom
-    ukDf=df[df['Country'] == 'United Kingdom']
+    ukDf = df[df['Country'] == 'United Kingdom']
+    ukDf = ukDf.reset_index()
+    ukDf = ukDf[['Country', 'TIME', 'Value']]
+    ukDf = ukDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
 
-    eu_percen_change = euDf['Value'].pct_change()*100
-    uk_percen_change = ukDf['Value'].pct_change()*100
+    ukDf = ukDf.pivot(index='TIME', columns='Country', values='Value')
+    ukDf.columns.name = ' '
+    ukDf['UK Mean'] = ukDf.mean(axis=1)
+    ukDf = ukDf.filter(['UK Mean'])
 
-    print(euDf.head())
-    print(eu_percen_change)
+    # Apply percentage change
+    euDf['EU % CHNG'] = euDf['EU Mean'].pct_change() * 100
+    ukDf['UK % CHNG'] = ukDf['UK Mean'].pct_change() * 100
+
+    # Merge EU & UK results into one dataframe
+    result_df = pd.merge(euDf, ukDf, how='inner', left_index=True, right_index=True)
+    #print(result_df)
+
+    # Uk line points
+    x1 = result_df.reset_index()['TIME']
+    y1 = result_df['UK % CHNG']
+
+    # plotting the Uk line points
+    plt.xticks(rotation=45)
+    plt.plot(x1, y1, label="UK")
+
+    # EuroZone line points
+    x2 = x1
+    y2 = result_df['EU % CHNG']
+
+    # plotting the line 2 points
+    plt.plot(x2, y2, label="Euro Area")
+    plt.xlabel('x - axis')
+
+    # Set the y axis label of the current axis.
+    plt.ylabel('% change')
+
+    plt.ylim([-15, 8])
+
+    # Set a title of the current axes.
+    plt.title('Monthly Change in Leading Economic Indicators')
+
+    # show a legend on the plot
+    plt.legend()
+
+    # Display a figure.
+    plt.show()
 
 
 def main():
