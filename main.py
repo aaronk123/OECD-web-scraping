@@ -12,7 +12,10 @@ from dateutil.relativedelta import relativedelta
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 
+
+driver = webdriver.Chrome('driver/chromedriver.exe')
 
 def OECD_scraper():
     # specifying the ChromeDrivers Location
@@ -36,6 +39,69 @@ def OECD_scraper():
     time.sleep(5)
     # asking our webdriver to quit
     driver.quit()
+
+def second_oecd_scraper():
+
+    driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
+    driver.set_window_size(945, 876)
+
+    element_to_hover_over = driver.find_element_by_id("customize-icon")
+
+    hover = ActionChains(driver).move_to_element(element_to_hover_over)
+    hover.perform()
+
+    driver.find_element_by_link_text('Time & Frequency [24]').click()
+
+    time.sleep(10)
+    #driver.find_element_by_id('cboRelativeAnnual').click()
+    #s1= Select(driver.find_element_by_id('cboRelativeAnnual'))
+    #driver.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[3]/td[5]/table/tbody/tr/td[1]/select/option[11]').click()
+
+    dropdown = driver.find_element_by_name('cboRelativeAnnual')
+    select = Select(dropdown)
+    select.click()
+
+    ''''
+    driver.find_element(By.ID, "cboRelativeAnnual").click()
+    dropdown = driver.find_element(By.ID, "cboRelativeAnnual")
+    dropdown.find_element(By.XPATH, "//option[. = '10']").click()
+    driver.find_element(By.ID, "cboRelativeAnnual").click()
+    driver.switch_to.default_content()
+    driver.find_element(By.ID, "lbtnViewData").click()
+    '''
+
+    ''''
+    element_to_hover_over = driver.find_element_by_id("customize-menu-4")
+
+    hover = ActionChains(driver).move_to_element(element_to_hover_over)
+    hover.perform()
+    '''
+
+
+
+
+
+
+
+    ''''
+    driver.find_element(By.ID, "customize-icon").click()
+    driver.find_element(By.ID, "data-selection-icon").click()
+    driver.find_element(By.ID, "customize-menu-5").click()
+    driver.switch_to.frame(1)
+    driver.switch_to.frame(0)
+    driver.find_element(By.ID, "cboRelativeAnnual").click()
+    dropdown = driver.find_element(By.ID, "cboRelativeAnnual")
+    dropdown.find_element(By.XPATH, "//option[. = '10']").click()
+    driver.find_element(By.ID, "cboRelativeAnnual").click()
+    driver.switch_to.default_content()
+    driver.find_element(By.ID, "lbtnViewData").click()
+    driver.switch_to.default_content()
+    driver.find_element(By.ID, "export-icon").click()
+    driver.find_element(By.ID, "export-icon").click()
+    driver.find_element(By.ID, "export-csv-icon").click()
+    driver.switch_to.frame(1)
+    driver.find_element(By.ID, "_ctl12_btnExportCSV").click()
+    '''
 
 
 def get_download_path():
@@ -74,8 +140,10 @@ def map_oecd_data():
     df = pd.read_csv(csv_file, parse_dates=['Time'], index_col=['Time'], encoding="ISO-8859-1")
 
     # Stating which countries are in the Euro Area for our dataframe later on
-    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland', 'Italy',
-                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia', 'Spain']
+    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland',
+                 'Italy',
+                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia',
+                 'Spain']
 
     # Creating our new dataframe composed of only countries in the Euro Zone
     euDf = df[df['Country'].isin(euro_area)]
@@ -105,7 +173,42 @@ def map_oecd_data():
 
     # Merge EU & UK results into one dataframe
     result_df = pd.merge(euDf, ukDf, how='inner', left_index=True, right_index=True)
-    #print(result_df)
+
+    # Scoring eu data for the diffusion index
+    euScore = 0
+    for i, row in result_df.iterrows():
+        if (row['EU % CHNG'] > 0):
+            euScore += 1
+            result_df.loc[i, 'EU % CHNG'] = euScore
+
+        elif (row['EU % CHNG'] < 0):
+            euScore -= 1
+            result_df.loc[i, 'EU % CHNG'] = euScore
+
+        elif (row['EU % CHNG'] == np.nan):
+            print("nan encountered")
+
+        else:
+            result_df.loc[i, 'EU % CHNG'] = euScore
+
+    # Scoring uk data for the diffusion index
+    ukScore = 0
+    for i, row in result_df.iterrows():
+        if (row['UK % CHNG'] > 0):
+            ukScore += 1
+            result_df.loc[i, 'UK % CHNG'] = ukScore
+
+        elif (row['UK % CHNG'] < 0):
+            ukScore -= 1
+            result_df.loc[i, 'UK % CHNG'] = ukScore
+
+        elif (row['UK % CHNG'] == np.nan):
+            print("nan encountered")
+
+        else:
+            result_df.loc[i, 'UK % CHNG'] = ukScore
+
+    print(result_df)
 
     # Uk line points
     x1 = result_df.reset_index()['TIME']
@@ -126,10 +229,9 @@ def map_oecd_data():
     # Set the y axis label of the current axis.
     plt.ylabel('% change')
 
-    plt.ylim([-15, 8])
-
     # Set a title of the current axes.
-    plt.title('Monthly Change in Leading Economic Indicators')
+    plt.title('Leading Economic Indicator Diffusion Index\n'
+              'If LEI reading for the economy improves score =1, if not score = 0')
 
     # show a legend on the plot
     plt.legend()
@@ -142,7 +244,9 @@ def main():
     # running the functions to obtain the newest leading indicators
     # OECD_scraper()
     # running the function to obtain the most recently downloaded csv file
-    map_oecd_data()
+    #map_oecd_data()
+    second_oecd_scraper()
 
 
 main()
+
