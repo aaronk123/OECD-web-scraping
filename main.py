@@ -53,13 +53,12 @@ def second_oecd_scraper():
     driver.find_element_by_link_text('Time & Frequency [24]').click()
 
     time.sleep(10)
-    #driver.find_element_by_id('cboRelativeAnnual').click()
-    #s1= Select(driver.find_element_by_id('cboRelativeAnnual'))
-    #driver.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[3]/td[5]/table/tbody/tr/td[1]/select/option[11]').click()
 
-    dropdown = driver.find_element_by_name('cboRelativeAnnual')
-    select = Select(dropdown)
-    select.click()
+    driver.switch_to.frame(driver.find_element_by_xpath('//*[@id="TimeSelector"]'))
+
+    time.sleep(5)
+
+    driver.find_element_by_id('cboRelativeAnnual').click()
 
     ''''
     driver.find_element(By.ID, "cboRelativeAnnual").click()
@@ -242,10 +241,10 @@ def map_oecd_data():
 
 def main():
     # running the functions to obtain the newest leading indicators
-    # OECD_scraper()
+    OECD_scraper()
     # running the function to obtain the most recently downloaded csv file
-    #map_oecd_data()
-    second_oecd_scraper()
+    map_oecd_data()
+    #second_oecd_scraper()
 
 
 main()
