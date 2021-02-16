@@ -54,54 +54,18 @@ def second_oecd_scraper():
 
     time.sleep(10)
 
-    driver.switch_to.frame(driver.find_element_by_xpath('//*[@id="TimeSelector"]'))
+    # Find the outer iframe and switch to it
+    iframe = driver.find_element_by_id('DialogFrame')
+    driver.switch_to.frame(iframe)
 
-    time.sleep(5)
+    # Find the inner iframe and switch to it
+    iframe = driver.find_element_by_id('TimeSelector')
+    driver.switch_to.frame(iframe)
 
-    driver.find_element_by_id('cboRelativeAnnual').click()
+    # Select number of years wanted
+    driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
 
-    ''''
-    driver.find_element(By.ID, "cboRelativeAnnual").click()
-    dropdown = driver.find_element(By.ID, "cboRelativeAnnual")
-    dropdown.find_element(By.XPATH, "//option[. = '10']").click()
-    driver.find_element(By.ID, "cboRelativeAnnual").click()
-    driver.switch_to.default_content()
-    driver.find_element(By.ID, "lbtnViewData").click()
-    '''
-
-    ''''
-    element_to_hover_over = driver.find_element_by_id("customize-menu-4")
-
-    hover = ActionChains(driver).move_to_element(element_to_hover_over)
-    hover.perform()
-    '''
-
-
-
-
-
-
-
-    ''''
-    driver.find_element(By.ID, "customize-icon").click()
-    driver.find_element(By.ID, "data-selection-icon").click()
-    driver.find_element(By.ID, "customize-menu-5").click()
-    driver.switch_to.frame(1)
-    driver.switch_to.frame(0)
-    driver.find_element(By.ID, "cboRelativeAnnual").click()
-    dropdown = driver.find_element(By.ID, "cboRelativeAnnual")
-    dropdown.find_element(By.XPATH, "//option[. = '10']").click()
-    driver.find_element(By.ID, "cboRelativeAnnual").click()
-    driver.switch_to.default_content()
-    driver.find_element(By.ID, "lbtnViewData").click()
-    driver.switch_to.default_content()
-    driver.find_element(By.ID, "export-icon").click()
-    driver.find_element(By.ID, "export-icon").click()
-    driver.find_element(By.ID, "export-csv-icon").click()
-    driver.switch_to.frame(1)
-    driver.find_element(By.ID, "_ctl12_btnExportCSV").click()
-    '''
-
+    
 
 def get_download_path():
     # Returns the default downloads path for linux or windows
@@ -241,10 +205,10 @@ def map_oecd_data():
 
 def main():
     # running the functions to obtain the newest leading indicators
-    OECD_scraper()
+    #OECD_scraper()
     # running the function to obtain the most recently downloaded csv file
-    map_oecd_data()
-    #second_oecd_scraper()
+    #map_oecd_data()
+    second_oecd_scraper()
 
 
 main()
