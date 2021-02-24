@@ -1,9 +1,26 @@
 import glob
 import os
+import sys
 import time
+from tkinter import ttk
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
+try:
+    import Tkinter as tk
+except ImportError:
+    import tkinter as tk
+
+try:
+    import ttk
+    py3 = False
+except ImportError:
+    import tkinter.ttk as ttk
+    py3 = True
+
+import project_support
 
 import calendar
 from datetime import date
@@ -15,7 +32,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 
 
-driver = webdriver.Chrome('driver/chromedriver.exe')
 
 def OECD_scraper():
     # specifying the ChromeDrivers Location
@@ -41,7 +57,7 @@ def OECD_scraper():
     driver.quit()
 
 def second_oecd_scraper():
-
+    driver = webdriver.Chrome('driver/chromedriver.exe')
     driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
     driver.set_window_size(945, 876)
 
@@ -63,9 +79,10 @@ def second_oecd_scraper():
     driver.switch_to.frame(iframe)
 
     # Select number of years wanted
-    driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
+    #driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
 
-    
+    #driver.find_element_by_id('lbtnViewData').click()
+    #driver.execute_script("document.getElementById('lbtnViewData').click()")
 
 def get_download_path():
     # Returns the default downloads path for linux or windows
@@ -97,82 +114,13 @@ def get_CSV():
     return latest_file
 
 
-def map_oecd_data():
+def diffusion_index():
     csv_file = get_CSV()
 
     df = pd.read_csv(csv_file, parse_dates=['Time'], index_col=['Time'], encoding="ISO-8859-1")
 
-    # Stating which countries are in the Euro Area for our dataframe later on
-    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland',
-                 'Italy',
-                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia',
-                 'Spain']
-
-    # Creating our new dataframe composed of only countries in the Euro Zone
-    euDf = df[df['Country'].isin(euro_area)]
-    euDf = euDf.reset_index()
-    euDf = euDf[['Country', 'TIME', 'Value']]
-    euDf = euDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
-
-    euDf = euDf.pivot(index='TIME', columns='Country', values='Value')
-    euDf.columns.name = ' '
-    euDf['EU Mean'] = euDf.mean(axis=1)
-    euDf = euDf.filter(['EU Mean'])
-
-    # Creating a dataframe consisting of only the United Kingdom
-    ukDf = df[df['Country'] == 'United Kingdom']
-    ukDf = ukDf.reset_index()
-    ukDf = ukDf[['Country', 'TIME', 'Value']]
-    ukDf = ukDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
-
-    ukDf = ukDf.pivot(index='TIME', columns='Country', values='Value')
-    ukDf.columns.name = ' '
-    ukDf['UK Mean'] = ukDf.mean(axis=1)
-    ukDf = ukDf.filter(['UK Mean'])
-
-    # Apply percentage change
-    euDf['EU % CHNG'] = euDf['EU Mean'].pct_change() * 100
-    ukDf['UK % CHNG'] = ukDf['UK Mean'].pct_change() * 100
-
-    # Merge EU & UK results into one dataframe
-    result_df = pd.merge(euDf, ukDf, how='inner', left_index=True, right_index=True)
-
-    # Scoring eu data for the diffusion index
-    euScore = 0
-    for i, row in result_df.iterrows():
-        if (row['EU % CHNG'] > 0):
-            euScore += 1
-            result_df.loc[i, 'EU % CHNG'] = euScore
-
-        elif (row['EU % CHNG'] < 0):
-            euScore -= 1
-            result_df.loc[i, 'EU % CHNG'] = euScore
-
-        elif (row['EU % CHNG'] == np.nan):
-            print("nan encountered")
-
-        else:
-            result_df.loc[i, 'EU % CHNG'] = euScore
-
-    # Scoring uk data for the diffusion index
-    ukScore = 0
-    for i, row in result_df.iterrows():
-        if (row['UK % CHNG'] > 0):
-            ukScore += 1
-            result_df.loc[i, 'UK % CHNG'] = ukScore
-
-        elif (row['UK % CHNG'] < 0):
-            ukScore -= 1
-            result_df.loc[i, 'UK % CHNG'] = ukScore
-
-        elif (row['UK % CHNG'] == np.nan):
-            print("nan encountered")
-
-        else:
-            result_df.loc[i, 'UK % CHNG'] = ukScore
-
-    print(result_df)
-
+   # print(result_df)
+    ''''
     # Uk line points
     x1 = result_df.reset_index()['TIME']
     y1 = result_df['UK % CHNG']
@@ -201,6 +149,106 @@ def map_oecd_data():
 
     # Display a figure.
     plt.show()
+    '''
+def vp_start_gui():
+    '''Starting point when module is the main routine.'''
+    global val, w, root
+    root = tk.Tk()
+    top = Toplevel1 (root)
+    project_support.init(root, top)
+    root.mainloop()
+
+w = None
+def create_Toplevel1(rt, *args, **kwargs):
+    '''Starting point when module is imported by another module.
+       Correct form of call: 'create_Toplevel1(root, *args, **kwargs)' .'''
+    global w, w_win, root
+    #rt = root
+    root = rt
+    w = tk.Toplevel (root)
+    top = Toplevel1 (w)
+    project_support.init(w, top, *args, **kwargs)
+    return (w, top)
+
+def destroy_Toplevel1():
+    global w
+    w.destroy()
+    w = None
+
+class Toplevel1:
+    def __init__(self, top=None):
+        '''This class configures and populates the toplevel window.
+           top is the toplevel containing window.'''
+        _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
+        _fgcolor = '#000000'  # X11 color: 'black'
+        _compcolor = '#d9d9d9' # X11 color: 'gray85'
+        _ana1color = '#d9d9d9' # X11 color: 'gray85'
+        _ana2color = '#ececec' # Closest X11 color: 'gray92'
+        self.style = ttk.Style()
+        if sys.platform == "win32":
+            self.style.theme_use('winnative')
+        self.style.configure('.',background=_bgcolor)
+        self.style.configure('.',foreground=_fgcolor)
+        self.style.configure('.',font="TkDefaultFont")
+        self.style.map('.',background=
+            [('selected', _compcolor), ('active',_ana2color)])
+
+        top.geometry("555x405+625+196")
+        top.minsize(120, 1)
+        top.maxsize(3604, 1061)
+        top.resizable(1,  1)
+        top.title("New Toplevel")
+        top.configure(background="#d9d9d9")
+        top.configure(highlightbackground="#d9d9d9")
+        top.configure(highlightcolor="black")
+
+        self.launch_OECD_Btn = tk.Button(top)
+        self.launch_OECD_Btn.place(relx=0.414, rely=0.121, height=24, width=77)
+        self.launch_OECD_Btn.configure(activebackground="#ececec")
+        self.launch_OECD_Btn.configure(activeforeground="#000000")
+        self.launch_OECD_Btn.configure(background="#d9d9d9")
+        self.launch_OECD_Btn.configure(command=second_oecd_scraper)
+        self.launch_OECD_Btn.configure(disabledforeground="#a3a3a3")
+        self.launch_OECD_Btn.configure(foreground="#000000")
+        self.launch_OECD_Btn.configure(highlightbackground="#d9d9d9")
+        self.launch_OECD_Btn.configure(highlightcolor="black")
+        self.launch_OECD_Btn.configure(pady="0")
+        self.launch_OECD_Btn.configure(text='''Launch OECD''')
+
+        self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
+        top.configure(menu = self.menubar)
+
+        self.TSeparator1 = ttk.Separator(top)
+        self.TSeparator1.place(relx=0.0, rely=0.244,  relwidth=0.991)
+
+        self.TSeparator2 = ttk.Separator(top)
+        self.TSeparator2.place(relx=0.0, rely=0.415,  relwidth=0.991)
+
+        self.diff_Index_Btn = tk.Button(top)
+        self.diff_Index_Btn.place(relx=0.234, rely=0.296, height=24, width=87)
+        self.diff_Index_Btn.configure(activebackground="#ececec")
+        self.diff_Index_Btn.configure(activeforeground="#000000")
+        self.diff_Index_Btn.configure(background="#d9d9d9")
+        self.diff_Index_Btn.config(command=diffusion_index)
+        self.diff_Index_Btn.configure(disabledforeground="#a3a3a3")
+        self.diff_Index_Btn.configure(foreground="#000000")
+        self.diff_Index_Btn.configure(highlightbackground="#d9d9d9")
+        self.diff_Index_Btn.configure(highlightcolor="black")
+        self.diff_Index_Btn.configure(pady="0")
+        self.diff_Index_Btn.configure(text='''Diffusion Index''')
+
+        self.ann_Change_Btn = tk.Button(top)
+        self.ann_Change_Btn.place(relx=0.577, rely=0.296, height=24, width=97)
+        self.ann_Change_Btn.configure(activebackground="#ececec")
+        self.ann_Change_Btn.configure(activeforeground="#000000")
+        self.ann_Change_Btn.configure(background="#d9d9d9")
+        self.ann_Change_Btn.configure(command='')
+        self.ann_Change_Btn.configure(disabledforeground="#a3a3a3")
+        self.ann_Change_Btn.configure(foreground="#000000")
+        self.ann_Change_Btn.configure(highlightbackground="#d9d9d9")
+        self.ann_Change_Btn.configure(highlightcolor="black")
+        self.ann_Change_Btn.configure(pady="0")
+        self.ann_Change_Btn.configure(text='''Annual Change''')
 
 
 def main():
@@ -208,7 +256,8 @@ def main():
     #OECD_scraper()
     # running the function to obtain the most recently downloaded csv file
     #map_oecd_data()
-    second_oecd_scraper()
+    #second_oecd_scraper()
+    vp_start_gui()
 
 
 main()
