@@ -116,8 +116,34 @@ def get_CSV():
 
 def diffusion_index():
     csv_file = get_CSV()
+    i=0
+    j=0
 
-    df = pd.read_csv(csv_file, parse_dates=['Time'], index_col=['Time'], encoding="ISO-8859-1")
+    df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
+    df=df[['Time', 'Country', 'TIME',  'Value']]
+    
+    df.set_index('Time')
+    print(df.iloc[1])
+
+    uniqueCountries = np.unique(df['Country'].astype(str))
+
+    while i< len(uniqueCountries):
+        country=uniqueCountries[i]
+        #print(country)
+        uniqCountryDF=df[df['Country']==country]
+
+        while j < len(uniqCountryDF):
+
+            '''
+            Compare first value to the next value
+            drop the first row as its no longer needed and have nothing to compare it to
+            create a situation for the final 2 rows to handle processing a row that does not exist
+            '''
+
+        print(uniqCountryDF)
+        i+=1
+
+    #print(df)
 
    # print(result_df)
     ''''
@@ -150,6 +176,7 @@ def diffusion_index():
     # Display a figure.
     plt.show()
     '''
+    
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root
@@ -257,8 +284,8 @@ def main():
     # running the function to obtain the most recently downloaded csv file
     #map_oecd_data()
     #second_oecd_scraper()
-    vp_start_gui()
-
+    #vp_start_gui()
+    diffusion_index()
 
 main()
 
