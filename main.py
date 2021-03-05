@@ -123,25 +123,57 @@ def diffusion_index():
     df=df[['Time', 'Country', 'TIME',  'Value']]
     
     df.set_index('Time')
-    print(df.iloc[1])
+    #print(df.iloc[1])
 
     uniqueCountries = np.unique(df['Country'].astype(str))
+    duplicateUniqCountryDF = np.unique(df['Country'].astype(str))
 
-    while i< len(uniqueCountries):
-        country=uniqueCountries[i]
-        #print(country)
-        uniqCountryDF=df[df['Country']==country]
+    for country in uniqueCountries:
+        uniqCountryDF = df[df['Country'] == country]
+        uniqCountryDF = uniqCountryDF.reset_index()
 
-        while j < len(uniqCountryDF):
-
-            '''
-            Compare first value to the next value
-            drop the first row as its no longer needed and have nothing to compare it to
-            create a situation for the final 2 rows to handle processing a row that does not exist
-            '''
+        duplicateUniqCountryDF = uniqCountryDF
+        duplicateUniqCountryDF = duplicateUniqCountryDF.reset_index()
 
         print(uniqCountryDF)
-        i+=1
+        print("----------------------------------------------------------")
+        print(duplicateUniqCountryDF)
+        value_array = []
+
+        for index, row in uniqCountryDF.iterrows():
+            if index != 0:
+
+                if uniqCountryDF.loc[index, 'Value'] > uniqCountryDF.loc[index - 1, 'Value']:
+                    value_array.append(1)
+
+                elif uniqCountryDF.loc[index, 'Value'] < uniqCountryDF.loc[index - 1, 'Value']:
+                    value_array.append(0)
+
+                else:
+                    print("else")
+
+
+        print("-------------- all values below -------------------")
+        uniqCountryDF=uniqCountryDF.iloc[1:]
+
+        uniqCountryDF.reset_index(drop=True).rename_axis(index=None, columns=None)
+
+        print(uniqCountryDF)
+
+        print("last 5 values")
+        print(value_array[-5:])
+
+        print("size of value array")
+        print(len(value_array))
+        
+        uniqCountryDF['Value'] = value_array
+        print("-------------value df below-------------")
+        print(uniqCountryDF)
+
+    i+=1
+
+
+
 
     #print(df)
 
@@ -176,7 +208,7 @@ def diffusion_index():
     # Display a figure.
     plt.show()
     '''
-    
+
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root
