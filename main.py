@@ -117,59 +117,44 @@ def get_CSV():
 def diffusion_index():
     csv_file = get_CSV()
     i=0
-    j=0
+    col_names=['index', 'Time', 'Country', 'TIME', 'Value', 'Binary']
+    diff_index_df = pd.DataFrame(columns = col_names)
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
     df=df[['Time', 'Country', 'TIME',  'Value']]
     
     df.set_index('Time')
-    #print(df.iloc[1])
 
+    # getting a list of all countries in our dataframe
     uniqueCountries = np.unique(df['Country'].astype(str))
-    duplicateUniqCountryDF = np.unique(df['Country'].astype(str))
 
+    # iterating through each country's data
     for country in uniqueCountries:
+
+        # creating a specific dataframe for each country
         uniqCountryDF = df[df['Country'] == country]
         uniqCountryDF = uniqCountryDF.reset_index()
 
-        duplicateUniqCountryDF = uniqCountryDF
-        duplicateUniqCountryDF = duplicateUniqCountryDF.reset_index()
-
-        print(uniqCountryDF)
-        print("----------------------------------------------------------")
-        print(duplicateUniqCountryDF)
-        value_array = []
-
+        #iterating through each row in a specific country's dataframe
         for index, row in uniqCountryDF.iterrows():
             if index != 0:
 
                 if uniqCountryDF.loc[index, 'Value'] > uniqCountryDF.loc[index - 1, 'Value']:
-                    value_array.append(1)
+                    uniqCountryDF.loc[index, 'Binary'] = 1
 
                 elif uniqCountryDF.loc[index, 'Value'] < uniqCountryDF.loc[index - 1, 'Value']:
-                    value_array.append(0)
-
-                else:
-                    print("else")
+                    uniqCountryDF.loc[index, 'Binary'] = 0
 
 
-        print("-------------- all values below -------------------")
+        # removing the first index as it does not have a binary value
         uniqCountryDF=uniqCountryDF.iloc[1:]
-
         uniqCountryDF.reset_index(drop=True).rename_axis(index=None, columns=None)
 
-        print(uniqCountryDF)
+        # appending to our final dataframe
+        diff_index_df=diff_index_df.append(uniqCountryDF, ignore_index=True)
+        #print(diff_index_df)
 
-        print("last 5 values")
-        print(value_array[-5:])
-
-        print("size of value array")
-        print(len(value_array))
-        
-        uniqCountryDF['Value'] = value_array
-        print("-------------value df below-------------")
-        print(uniqCountryDF)
-
+    print(diff_index_df)
     i+=1
 
 
