@@ -121,7 +121,9 @@ def diffusion_index():
     diff_index_df = pd.DataFrame(columns = col_names)
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
-    df=df[['Time', 'Country', 'TIME',  'Value']]
+
+    df=df[['Subject', 'Time', 'Country', 'TIME',  'Value']]
+    df = df.loc[df['Subject'] == 'Amplitude adjusted (CLI)']
     
     df.set_index('Time')
 
@@ -152,49 +154,21 @@ def diffusion_index():
 
         # appending to our final dataframe
         diff_index_df=diff_index_df.append(uniqCountryDF, ignore_index=True)
-        #print(diff_index_df)
 
-    #print(diff_index_df)
+
+    print(diff_index_df)
+    diff_index_df.drop_duplicates(subset=['TIME', 'Country'])
+
     p = diff_index_df.groupby(['TIME']).agg({'Binary': 'sum'})
+    print(p)
     p.sort_values(by='TIME')
-    #p.index = pd.to_datetime(p.index).strftime('%b-%Y')
     p.reset_index(level=0, inplace=True)
 
     p.reset_index()
-    print(p)
-    #print(diff_index_df)
-    i+=1
 
-    for col in p.columns:
-        print(col)
+    p.plot(kind='line', x='TIME', y='Binary')
+    plt.show()
 
-
-        #print(df)
-
-   # print(result_df)
-
-    # Uk line points
-    x = p['TIME']
-    y1 = p['Binary']
-
-    # plotting the Uk line points
-    plt.xticks(rotation=45)
-    #plt.set_xticks(x, minor=True)
-    plt.plot(p)
-
-    plt.xlabel('x - axis')
-
-    # Set the y axis label of the current axis.
-    plt.ylabel('% change')
-
-    # Set a title of the current axes.
-    plt.title('Leading Economic Indicator Diffusion Index\n'
-              'If LEI reading for the economy improves score =1, if not score = 0')
-
-    # show a legend on the plot
-    plt.legend()
-
-    # Display a figure.
     plt.show()
 
 
