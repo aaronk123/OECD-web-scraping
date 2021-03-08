@@ -154,30 +154,34 @@ def diffusion_index():
         diff_index_df=diff_index_df.append(uniqCountryDF, ignore_index=True)
         #print(diff_index_df)
 
-    print(diff_index_df)
+    #print(diff_index_df)
+    p = diff_index_df.groupby(['TIME']).agg({'Binary': 'sum'})
+    p.sort_values(by='TIME')
+    #p.index = pd.to_datetime(p.index).strftime('%b-%Y')
+    p.reset_index(level=0, inplace=True)
+
+    p.reset_index()
+    print(p)
+    #print(diff_index_df)
     i+=1
 
+    for col in p.columns:
+        print(col)
 
 
-
-    #print(df)
+        #print(df)
 
    # print(result_df)
-    ''''
+
     # Uk line points
-    x1 = result_df.reset_index()['TIME']
-    y1 = result_df['UK % CHNG']
+    x = p['TIME']
+    y1 = p['Binary']
 
     # plotting the Uk line points
     plt.xticks(rotation=45)
-    plt.plot(x1, y1, label="UK")
+    #plt.set_xticks(x, minor=True)
+    plt.plot(p)
 
-    # EuroZone line points
-    x2 = x1
-    y2 = result_df['EU % CHNG']
-
-    # plotting the line 2 points
-    plt.plot(x2, y2, label="Euro Area")
     plt.xlabel('x - axis')
 
     # Set the y axis label of the current axis.
@@ -192,7 +196,7 @@ def diffusion_index():
 
     # Display a figure.
     plt.show()
-    '''
+
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
