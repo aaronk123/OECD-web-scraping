@@ -156,20 +156,23 @@ def diffusion_index():
         diff_index_df=diff_index_df.append(uniqCountryDF, ignore_index=True)
 
 
-    print(diff_index_df)
     diff_index_df.drop_duplicates(subset=['TIME', 'Country'])
 
     p = diff_index_df.groupby(['TIME']).agg({'Binary': 'sum'})
-    print(p)
+
     p.sort_values(by='TIME')
     p.reset_index(level=0, inplace=True)
 
     p.reset_index()
 
     p.plot(kind='line', x='TIME', y='Binary')
-    plt.show()
+
+    plt.title('Leading Economic Indicator Diffusion Index\n'
+              'If LEI reading for the economy improves score =1, if not score = 0')
 
     plt.show()
+
+
 
 
 def vp_start_gui():
