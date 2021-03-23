@@ -15,12 +15,15 @@ except ImportError:
 
 try:
     import ttk
+
     py3 = False
 except ImportError:
     import tkinter.ttk as ttk
+
     py3 = True
 
 import project_support
+import xlsxwriter
 
 import calendar
 from datetime import date
@@ -30,7 +33,6 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
-
 
 
 def OECD_scraper():
@@ -56,6 +58,7 @@ def OECD_scraper():
     # asking our webdriver to quit
     driver.quit()
 
+
 def second_oecd_scraper():
     driver = webdriver.Chrome('driver/chromedriver.exe')
     driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
@@ -79,10 +82,11 @@ def second_oecd_scraper():
     driver.switch_to.frame(iframe)
 
     # Select number of years wanted
-    #driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
+    # driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
 
-    #driver.find_element_by_id('lbtnViewData').click()
-    #driver.execute_script("document.getElementById('lbtnViewData').click()")
+    # driver.find_element_by_id('lbtnViewData').click()
+    # driver.execute_script("document.getElementById('lbtnViewData').click()")
+
 
 def get_download_path():
     # Returns the default downloads path for linux or windows
@@ -116,15 +120,15 @@ def get_CSV():
 
 def diffusion_index():
     csv_file = get_CSV()
-    i=0
-    col_names=['index', 'Time', 'Country', 'TIME', 'Value', 'Binary']
-    diff_index_df = pd.DataFrame(columns = col_names)
+
+    col_names = ['index', 'Time', 'Country', 'TIME', 'Value', 'Binary']
+    diff_index_df = pd.DataFrame(columns=col_names)
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
 
-    df=df[['Subject', 'Time', 'Country', 'TIME',  'Value']]
+    df = df[['Subject', 'Time', 'Country', 'TIME', 'Value']]
     df = df.loc[df['Subject'] == 'Amplitude adjusted (CLI)']
-    
+
     df.set_index('Time')
 
     # getting a list of all countries in our dataframe
@@ -137,7 +141,7 @@ def diffusion_index():
         uniqCountryDF = df[df['Country'] == country]
         uniqCountryDF = uniqCountryDF.reset_index()
 
-        #iterating through each row in a specific country's dataframe
+        # iterating through each row in a specific country's dataframe
         for index, row in uniqCountryDF.iterrows():
             if index != 0:
 
@@ -147,18 +151,18 @@ def diffusion_index():
                 elif uniqCountryDF.loc[index, 'Value'] < uniqCountryDF.loc[index - 1, 'Value']:
                     uniqCountryDF.loc[index, 'Binary'] = 0
 
-
         # removing the first index as it does not have a binary value
-        uniqCountryDF=uniqCountryDF.iloc[1:]
+        uniqCountryDF = uniqCountryDF.iloc[1:]
         uniqCountryDF.reset_index(drop=True).rename_axis(index=None, columns=None)
 
         # appending to our final dataframe
-        diff_index_df=diff_index_df.append(uniqCountryDF, ignore_index=True)
-
+        diff_index_df = diff_index_df.append(uniqCountryDF, ignore_index=True)
 
     diff_index_df.drop_duplicates(subset=['TIME', 'Country'])
 
     p = diff_index_df.groupby(['TIME']).agg({'Binary': 'sum'})
+
+    global_num = p.sum()
 
     p.sort_values(by='TIME')
     p.reset_index(level=0, inplace=True)
@@ -171,34 +175,125 @@ def diffusion_index():
               'If LEI reading for the economy improves score =1, if not score = 0')
 
     plt.show()
+    '''
+    plt.savefig('python_pretty_plot.png')
+
+    writer = pd.ExcelWriter('python_plot.xlsx', engine='xlsxwriter')
+    global_num.to_excel(writer, sheet_name='Sheet1')
+
+    worksheet = writer.sheets['Sheet1']
+    worksheet.insert_image('C2', 'python_pretty_plot.png')
+    writer.save()
+    '''
 
 
+def annual_changes():
+    csv_file = get_CSV()
+
+    col_names = ['index', 'Time', 'Country', 'TIME', 'Value']
+    ann_change_df = pd.DataFrame(columns=col_names)
+
+    df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
+
+    df = df[['Subject', 'Time', 'Country', 'TIME', 'Value']]
+    df = df.loc[df['Subject'] == 'Amplitude adjusted (CLI)']
+
+    df.set_index('Time')
+
+    ########################
+    # Graphing the Euro Zone
+    ########################
+
+    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland',
+                 'Italy',
+                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia',
+                 'Spain']
+    # Creating our new dataframe composed of only countries in the Euro Zone
+    euDf = df[df['Country'].isin(euro_area)]
+
+    euDf = euDf.reset_index()
+    euDf = euDf[['Country', 'TIME', 'Value']]
+    euDf = euDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
+
+    euDf = euDf.pivot(index='TIME', columns='Country', values='Value')
+
+    euDf.columns.name = ' '
+    euDf['EU Mean'] = euDf.mean(axis=1)
+    euDf = euDf.filter(['EU Mean'])
+
+    euDf['EU % Change']=euDf['EU Mean'].pct_change()*100
+
+    x_plt=euDf.reset_index()['TIME']
+
+    plt.title('Annual Change in The Euro Zone Leading Economic Indicators')
+
+    plt.plot(x_plt, euDf['EU % Change'])
+
+
+
+    plt.show()
+
+
+    #############################
+    # Graphing singular countries
+    #############################
+
+    desired_countries = ["Ireland", "United Kingdom", "United States", "Japan", "China (People's Republic of)"]
+
+    # Creating our dataframe of the other countries we wish to use
+    df = df[df['Country'].isin(desired_countries)]
+
+    for country in desired_countries:
+        print("in loop now")
+
+        # creating a specific dataframe for each country
+        uniqCountryDF = df[df['Country'] == country]
+        uniqCountryDF = uniqCountryDF.reset_index()
+
+        uniqCountryDF['Value']=uniqCountryDF['Value'].pct_change()*100
+
+        print(uniqCountryDF)
+        country_name = uniqCountryDF.iloc[-1]['Country']
+        print(country_name)
+
+        uniqCountryDF.reset_index(level=0, inplace=True)
+
+        uniqCountryDF.plot(kind='line', x='TIME', y='Value')
+
+        plt.title(f'Annual Change in {country_name} Leading Economic Indicators')
+
+        plt.show()
 
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root
     root = tk.Tk()
-    top = Toplevel1 (root)
+    top = Toplevel1(root)
     project_support.init(root, top)
     root.mainloop()
 
+
 w = None
+
+
 def create_Toplevel1(rt, *args, **kwargs):
     '''Starting point when module is imported by another module.
        Correct form of call: 'create_Toplevel1(root, *args, **kwargs)' .'''
     global w, w_win, root
-    #rt = root
+    # rt = root
     root = rt
-    w = tk.Toplevel (root)
-    top = Toplevel1 (w)
+    w = tk.Toplevel(root)
+    top = Toplevel1(w)
     project_support.init(w, top, *args, **kwargs)
     return (w, top)
+
 
 def destroy_Toplevel1():
     global w
     w.destroy()
     w = None
+
 
 class Toplevel1:
     def __init__(self, top=None):
@@ -206,22 +301,22 @@ class Toplevel1:
            top is the toplevel containing window.'''
         _bgcolor = '#d9d9d9'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
-        _compcolor = '#d9d9d9' # X11 color: 'gray85'
-        _ana1color = '#d9d9d9' # X11 color: 'gray85'
-        _ana2color = '#ececec' # Closest X11 color: 'gray92'
+        _compcolor = '#d9d9d9'  # X11 color: 'gray85'
+        _ana1color = '#d9d9d9'  # X11 color: 'gray85'
+        _ana2color = '#ececec'  # Closest X11 color: 'gray92'
         self.style = ttk.Style()
         if sys.platform == "win32":
             self.style.theme_use('winnative')
-        self.style.configure('.',background=_bgcolor)
-        self.style.configure('.',foreground=_fgcolor)
-        self.style.configure('.',font="TkDefaultFont")
-        self.style.map('.',background=
-            [('selected', _compcolor), ('active',_ana2color)])
+        self.style.configure('.', background=_bgcolor)
+        self.style.configure('.', foreground=_fgcolor)
+        self.style.configure('.', font="TkDefaultFont")
+        self.style.map('.', background=
+        [('selected', _compcolor), ('active', _ana2color)])
 
         top.geometry("555x405+625+196")
         top.minsize(120, 1)
         top.maxsize(3604, 1061)
-        top.resizable(1,  1)
+        top.resizable(1, 1)
         top.title("New Toplevel")
         top.configure(background="#d9d9d9")
         top.configure(highlightbackground="#d9d9d9")
@@ -240,14 +335,14 @@ class Toplevel1:
         self.launch_OECD_Btn.configure(pady="0")
         self.launch_OECD_Btn.configure(text='''Launch OECD''')
 
-        self.menubar = tk.Menu(top,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-        top.configure(menu = self.menubar)
+        self.menubar = tk.Menu(top, font="TkMenuFont", bg=_bgcolor, fg=_fgcolor)
+        top.configure(menu=self.menubar)
 
         self.TSeparator1 = ttk.Separator(top)
-        self.TSeparator1.place(relx=0.0, rely=0.244,  relwidth=0.991)
+        self.TSeparator1.place(relx=0.0, rely=0.244, relwidth=0.991)
 
         self.TSeparator2 = ttk.Separator(top)
-        self.TSeparator2.place(relx=0.0, rely=0.415,  relwidth=0.991)
+        self.TSeparator2.place(relx=0.0, rely=0.415, relwidth=0.991)
 
         self.diff_Index_Btn = tk.Button(top)
         self.diff_Index_Btn.place(relx=0.234, rely=0.296, height=24, width=87)
@@ -278,12 +373,13 @@ class Toplevel1:
 
 def main():
     # running the functions to obtain the newest leading indicators
-    #OECD_scraper()
+    # OECD_scraper()
     # running the function to obtain the most recently downloaded csv file
-    #map_oecd_data()
-    #second_oecd_scraper()
-    #vp_start_gui()
-    diffusion_index()
+    # map_oecd_data()
+    # second_oecd_scraper()
+    # vp_start_gui()
+    annual_changes()
+    # diffusion_index()
+
 
 main()
-
