@@ -227,9 +227,14 @@ def annual_changes():
 
     euDf.reset_index(level=0, inplace=True)
 
-    euDf.plot(kind='line', x='TIME', y='EU % Change')
+    euDf.plot(kind='line', x='TIME', y='EU % Change', legend=None).axhline(y=0, color='Grey', linestyle='--')
 
     plt.title(f'Annual Change in The Euro Zone Leading Economic Indicators')
+
+    plt.ylabel("% change")
+    plt.xlabel("Date")
+
+
 
     plt.show()
 
@@ -258,9 +263,12 @@ def annual_changes():
 
         uniqCountryDF.reset_index(level=0, inplace=True)
 
-        uniqCountryDF.plot(kind='line', x='TIME', y='Value')
+        uniqCountryDF.plot(kind='line', x='TIME', y='Value', legend=None).axhline(y=0, color='Grey', linestyle='--')
 
         plt.title(f'Annual Change in {country_name} Leading Economic Indicators')
+
+        plt.ylabel('% change')
+        plt.xlabel('Date')
 
         plt.show()
 
