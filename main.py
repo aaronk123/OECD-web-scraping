@@ -223,13 +223,13 @@ def annual_changes():
 
     euDf['EU % Change']=euDf['EU Mean'].pct_change()*100
 
-    x_plt=euDf.reset_index()['TIME']
+    euDf=euDf.reset_index('TIME')
 
-    plt.title('Annual Change in The Euro Zone Leading Economic Indicators')
+    euDf.reset_index(level=0, inplace=True)
 
-    plt.plot(x_plt, euDf['EU % Change'])
+    euDf.plot(kind='line', x='TIME', y='EU % Change')
 
-
+    plt.title(f'Annual Change in The Euro Zone Leading Economic Indicators')
 
     plt.show()
 
