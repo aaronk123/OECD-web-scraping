@@ -7,6 +7,7 @@ from tkinter import ttk
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import addcharts
 
 try:
     import Tkinter as tk
@@ -24,6 +25,8 @@ except ImportError:
 
 import project_support
 import xlsxwriter
+import openpyxl
+from openpyxl import Workbook,load_workbook
 
 import calendar
 from datetime import date
@@ -132,31 +135,31 @@ def diffusion_index():
     df.set_index('Time')
 
     # getting a list of all countries in our dataframe
-    uniqueCountries = np.unique(df['Country'].astype(str))
+    unique_countries = np.unique(df['Country'].astype(str))
 
     # iterating through each country's data
-    for country in uniqueCountries:
+    for country in unique_countries:
 
         # creating a specific dataframe for each country
-        uniqCountryDF = df[df['Country'] == country]
-        uniqCountryDF = uniqCountryDF.reset_index()
+        uniq_country_df = df[df['Country'] == country]
+        uniq_country_df = uniq_country_df.reset_index()
 
         # iterating through each row in a specific country's dataframe
-        for index, row in uniqCountryDF.iterrows():
+        for index, row in uniq_country_df.iterrows():
             if index != 0:
 
-                if uniqCountryDF.loc[index, 'Value'] > uniqCountryDF.loc[index - 1, 'Value']:
-                    uniqCountryDF.loc[index, 'Binary'] = 1
+                if uniq_country_df.loc[index, 'Value'] > uniq_country_df.loc[index - 1, 'Value']:
+                    uniq_country_df.loc[index, 'Binary'] = 1
 
-                elif uniqCountryDF.loc[index, 'Value'] < uniqCountryDF.loc[index - 1, 'Value']:
-                    uniqCountryDF.loc[index, 'Binary'] = 0
+                elif uniq_country_df.loc[index, 'Value'] < uniq_country_df.loc[index - 1, 'Value']:
+                    uniq_country_df.loc[index, 'Binary'] = 0
 
         # removing the first index as it does not have a binary value
-        uniqCountryDF = uniqCountryDF.iloc[1:]
-        uniqCountryDF.reset_index(drop=True).rename_axis(index=None, columns=None)
+        uniq_country_df = uniq_country_df.iloc[1:]
+        uniq_country_df.reset_index(drop=True).rename_axis(index=None, columns=None)
 
         # appending to our final dataframe
-        diff_index_df = diff_index_df.append(uniqCountryDF, ignore_index=True)
+        diff_index_df = diff_index_df.append(uniq_country_df, ignore_index=True)
 
     diff_index_df.drop_duplicates(subset=['TIME', 'Country'])
 
@@ -169,13 +172,11 @@ def diffusion_index():
 
     p.reset_index()
 
-    p.plot(kind='line', x='TIME', y='Binary')
+    p.plot(kind='line', x='TIME', y='Binary', legend=None)
 
     plt.title('Leading Economic Indicator Diffusion Index\n'
               'If LEI reading for the economy improves score =1, if not score = 0')
 
-    plt.show()
-    '''
     plt.savefig('python_pretty_plot.png')
 
     writer = pd.ExcelWriter('python_plot.xlsx', engine='xlsxwriter')
@@ -184,14 +185,21 @@ def diffusion_index():
     worksheet = writer.sheets['Sheet1']
     worksheet.insert_image('C2', 'python_pretty_plot.png')
     writer.save()
-    '''
+
+    plt.show()
+
+
+
+
 
 
 def annual_changes():
     csv_file = get_CSV()
 
-    col_names = ['index', 'Time', 'Country', 'TIME', 'Value']
-    ann_change_df = pd.DataFrame(columns=col_names)
+    # Step 1. Create WorkBook
+    file_name = 'Economic-Indicators-Ireland.xlsx'
+    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
+    workbook = writer.book
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
 
@@ -209,33 +217,31 @@ def annual_changes():
                  'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia',
                  'Spain']
     # Creating our new dataframe composed of only countries in the Euro Zone
-    euDf = df[df['Country'].isin(euro_area)]
+    eu_Df = df[df['Country'].isin(euro_area)]
 
-    euDf = euDf.reset_index()
-    euDf = euDf[['Country', 'TIME', 'Value']]
-    euDf = euDf.drop_duplicates(subset=['TIME', 'Country'], keep='last')
+    eu_Df = eu_Df.reset_index()
+    eu_Df = eu_Df[['Country', 'TIME', 'Value']]
+    eu_Df = eu_Df.drop_duplicates(subset=['TIME', 'Country'], keep='last')
 
-    euDf = euDf.pivot(index='TIME', columns='Country', values='Value')
+    eu_Df = eu_Df.pivot(index='TIME', columns='Country', values='Value')
 
-    euDf.columns.name = ' '
-    euDf['EU Mean'] = euDf.mean(axis=1)
-    euDf = euDf.filter(['EU Mean'])
+    eu_Df.columns.name = ' '
+    eu_Df['EU Mean'] = eu_Df.mean(axis=1)
+    eu_Df = eu_Df.filter(['EU Mean'])
 
-    euDf['EU % Change']=euDf['EU Mean'].pct_change()*100
+    eu_Df['EU % Change']=eu_Df['EU Mean'].pct_change()*100
 
-    euDf=euDf.reset_index('TIME')
+    eu_Df=eu_Df.reset_index('TIME')
 
-    euDf.reset_index(level=0, inplace=True)
+    eu_Df.reset_index(level=0, inplace=True)
+    eu_Df.plot(kind='line', x='TIME', y='EU % Change', legend=None).axhline(y=0, color='Grey', linestyle='--')
 
-    euDf.plot(kind='line', x='TIME', y='EU % Change', legend=None).axhline(y=0, color='Grey', linestyle='--')
-
-    plt.title(f'Annual Change in The Euro Zone Leading Economic Indicators')
+    plt.title('Annual Change in The Euro Zone Leading Economic Indicators')
 
     plt.ylabel("% change")
     plt.xlabel("Date")
 
-
-
+    addcharts.line_chart('Euro Zone', file_name, 'L2', 4, [9], len(eu_Df), 'Annual Change in The Euro Zone Leading Economic Indicators', '% change', ['I'])
     plt.show()
 
 
@@ -249,28 +255,41 @@ def annual_changes():
     df = df[df['Country'].isin(desired_countries)]
 
     for country in desired_countries:
-        print("in loop now")
 
         # creating a specific dataframe for each country
-        uniqCountryDF = df[df['Country'] == country]
-        uniqCountryDF = uniqCountryDF.reset_index()
+        uniq_country_df = df[df['Country'] == country]
+        uniq_country_df = uniq_country_df.reset_index()
 
-        uniqCountryDF['Value']=uniqCountryDF['Value'].pct_change()*100
+        uniq_country_df['Value']=uniq_country_df['Value'].pct_change()*100
 
-        print(uniqCountryDF)
-        country_name = uniqCountryDF.iloc[-1]['Country']
-        print(country_name)
+        country_name = uniq_country_df.iloc[-1]['Country']
 
-        uniqCountryDF.reset_index(level=0, inplace=True)
+        uniq_country_df.reset_index(level=0, inplace=True)
 
-        uniqCountryDF.plot(kind='line', x='TIME', y='Value', legend=None).axhline(y=0, color='Grey', linestyle='--')
+        uniq_country_df.plot(kind='line', x='TIME', y='Value', legend=None).axhline(y=0, color='Grey', linestyle='--')
 
         plt.title(f'Annual Change in {country_name} Leading Economic Indicators')
 
         plt.ylabel('% change')
         plt.xlabel('Date')
 
+        addcharts.line_chart(country_name, file_name, 'L2', 4, [9], len(uniq_country_df), f'Annual Change in {country_name} Leading Economic Indicators', '% change', ['I'])
+
         plt.show()
+
+def addTable(df,writer,sheetName):
+    df.to_excel(writer, sheet_name=sheetName, startrow=1, header=False, index=False)
+    worksheet = writer.sheets[sheetName]
+    (max_row, max_col) = df.shape
+
+    column_settings = []
+    for header in df.columns:
+        column_settings.append({'header': header})
+
+    worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': column_settings})
+    worksheet.set_column(0, max_col - 1, 12)
+
+
 
 
 def vp_start_gui():
@@ -370,7 +389,7 @@ class Toplevel1:
         self.ann_Change_Btn.configure(activebackground="#ececec")
         self.ann_Change_Btn.configure(activeforeground="#000000")
         self.ann_Change_Btn.configure(background="#d9d9d9")
-        self.ann_Change_Btn.configure(command='')
+        self.ann_Change_Btn.configure(command=annual_changes)
         self.ann_Change_Btn.configure(disabledforeground="#a3a3a3")
         self.ann_Change_Btn.configure(foreground="#000000")
         self.ann_Change_Btn.configure(highlightbackground="#d9d9d9")
@@ -385,9 +404,9 @@ def main():
     # running the function to obtain the most recently downloaded csv file
     # map_oecd_data()
     # second_oecd_scraper()
-    # vp_start_gui()
-    annual_changes()
-    # diffusion_index()
+    vp_start_gui()
+    # annual_changes()
+    #diffusion_index()
 
 
 main()
