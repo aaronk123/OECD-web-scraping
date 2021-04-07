@@ -177,29 +177,18 @@ def diffusion_index():
     plt.title('Leading Economic Indicator Diffusion Index\n'
               'If LEI reading for the economy improves score =1, if not score = 0')
 
-    plt.savefig('python_pretty_plot.png')
+    plt.savefig('diffusion index.png')
 
-    writer = pd.ExcelWriter('python_plot.xlsx', engine='xlsxwriter')
+    writer = pd.ExcelWriter('Diffusion index.xlsx', engine='xlsxwriter')
     global_num.to_excel(writer, sheet_name='Sheet1')
 
     worksheet = writer.sheets['Sheet1']
-    worksheet.insert_image('C2', 'python_pretty_plot.png')
+    worksheet.insert_image('C2', 'diffusion index.png')
     writer.save()
-
-    plt.show()
-
-
-
-
 
 
 def annual_changes():
     csv_file = get_CSV()
-
-    # Step 1. Create WorkBook
-    file_name = 'Economic-Indicators-Ireland.xlsx'
-    writer = pd.ExcelWriter(file_name, engine='xlsxwriter')
-    workbook = writer.book
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
 
@@ -211,43 +200,53 @@ def annual_changes():
     ########################
     # Graphing the Euro Zone
     ########################
+    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland', 'Italy',
+                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia', 'Spain']
 
-    euro_area = ['Austria', 'Belgium', 'Cyprus', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Ireland',
-                 'Italy',
-                 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands', 'Portugal', 'Slovakia', 'Slovenia',
-                 'Spain']
     # Creating our new dataframe composed of only countries in the Euro Zone
     eu_Df = df[df['Country'].isin(euro_area)]
-
     eu_Df = eu_Df.reset_index()
     eu_Df = eu_Df[['Country', 'TIME', 'Value']]
     eu_Df = eu_Df.drop_duplicates(subset=['TIME', 'Country'], keep='last')
-
     eu_Df = eu_Df.pivot(index='TIME', columns='Country', values='Value')
 
     eu_Df.columns.name = ' '
     eu_Df['EU Mean'] = eu_Df.mean(axis=1)
     eu_Df = eu_Df.filter(['EU Mean'])
 
-    eu_Df['EU % Change']=eu_Df['EU Mean'].pct_change()*100
-
-    eu_Df=eu_Df.reset_index('TIME')
-
+    eu_Df['EU % Change'] = eu_Df['EU Mean'].pct_change() * 100
+    eu_Df = eu_Df.reset_index('TIME')
     eu_Df.reset_index(level=0, inplace=True)
-    eu_Df.plot(kind='line', x='TIME', y='EU % Change', legend=None).axhline(y=0, color='Grey', linestyle='--')
+    eu_Df = eu_Df[['TIME', 'EU Mean', 'EU % Change']]
 
-    plt.title('Annual Change in The Euro Zone Leading Economic Indicators')
+    # Create a workbook
+    workbook = xlsxwriter.Workbook('Annual Changes.xlsx')
 
-    plt.ylabel("% change")
-    plt.xlabel("Date")
+    # Create a Pandas Excel writer using XlsxWriter as the engine
+    writer = pd.ExcelWriter('Annual Changes.xlsx', engine='xlsxwriter')
 
-    addcharts.line_chart('Euro Zone', file_name, 'L2', 4, [9], len(eu_Df), 'Annual Change in The Euro Zone Leading Economic Indicators', '% change', ['I'])
-    plt.show()
+    # Write DataFrame to workbook sheet
+    eu_Df.to_excel(writer, sheet_name='Euro-Zone', startcol=0, index=False)
 
+    # Set worksheet
+    workbook = writer.book
+    worksheet = writer.sheets['Euro-Zone']
+
+    # Create a chart object.
+    chart = workbook.add_chart({'type': 'line'})
+
+    # Configure the series of the chart from the dataframe data.
+    chart.add_series({
+        'categories': ['Euro-Zone', 1, 0, len(eu_Df) + 2, 0],
+        'values': ['Euro-Zone', 1, 2, len(eu_Df) + 2, 2],
+    })
+
+    # Insert the chart into the worksheet.
+    worksheet.insert_chart('E2', chart)
 
     #############################
     # Graphing singular countries
-    #############################
+    ##############################
 
     desired_countries = ["Ireland", "United Kingdom", "United States", "Japan", "China (People's Republic of)"]
 
@@ -255,12 +254,11 @@ def annual_changes():
     df = df[df['Country'].isin(desired_countries)]
 
     for country in desired_countries:
-
         # creating a specific dataframe for each country
         uniq_country_df = df[df['Country'] == country]
         uniq_country_df = uniq_country_df.reset_index()
 
-        uniq_country_df['Value']=uniq_country_df['Value'].pct_change()*100
+        uniq_country_df['Value'] = uniq_country_df['Value'].pct_change() * 100
 
         country_name = uniq_country_df.iloc[-1]['Country']
 
@@ -268,28 +266,28 @@ def annual_changes():
 
         uniq_country_df.plot(kind='line', x='TIME', y='Value', legend=None).axhline(y=0, color='Grey', linestyle='--')
 
-        plt.title(f'Annual Change in {country_name} Leading Economic Indicators')
+        # Add DataFrame to workbook
+        uniq_country_df.to_excel(writer, sheet_name=country_name, startcol=0, index=False)
 
-        plt.ylabel('% change')
-        plt.xlabel('Date')
+        # Set worksheet
+        workbook = writer.book
+        worksheet = writer.sheets[country_name]
 
-        addcharts.line_chart(country_name, file_name, 'L2', 4, [9], len(uniq_country_df), f'Annual Change in {country_name} Leading Economic Indicators', '% change', ['I'])
+        # Create a chart object.
+        chart = None
+        chart = workbook.add_chart({'type': 'line'})
 
-        plt.show()
+        # Configure the series of the chart from the dataframe data.
+        chart.add_series({
+            'categories': [country_name, 1, 5, len(uniq_country_df) + 2, 5],
+            'values': [country_name, 1, 6, len(uniq_country_df) + 2, 6],
 
-def addTable(df,writer,sheetName):
-    df.to_excel(writer, sheet_name=sheetName, startrow=1, header=False, index=False)
-    worksheet = writer.sheets[sheetName]
-    (max_row, max_col) = df.shape
+        })
+        # Insert the chart into the worksheet.
+        worksheet.insert_chart('I2', chart)
 
-    column_settings = []
-    for header in df.columns:
-        column_settings.append({'header': header})
-
-    worksheet.add_table(0, 0, max_row, max_col - 1, {'columns': column_settings})
-    worksheet.set_column(0, max_col - 1, 12)
-
-
+    # Save the writer
+    writer.save()
 
 
 def vp_start_gui():
@@ -344,7 +342,7 @@ class Toplevel1:
         top.minsize(120, 1)
         top.maxsize(3604, 1061)
         top.resizable(1, 1)
-        top.title("New Toplevel")
+        top.title("OECD Graph Generator")
         top.configure(background="#d9d9d9")
         top.configure(highlightbackground="#d9d9d9")
         top.configure(highlightcolor="black")
