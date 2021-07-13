@@ -57,37 +57,10 @@ def get_query():
     df = df[['Country','Time','Value']]
     df  =df.pivot(index='Time', columns='Country', values='Value') 
 
-def get_download_path():
-    # Returns the default downloads path for linux or windows
-    if os.name == 'nt':
-        import winreg
-        sub_key = r'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders'
-        downloads_guid = '{374DE290-123F-4565-9164-39C4925E467B}'
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, sub_key) as key:
-            location = winreg.QueryValueEx(key, downloads_guid)[0]
-        return location
-    else:
-        return os.path.join(os.path.expanduser('~'), 'downloads')
-
-def get_CSV():
-    # getting the path using our get_download_path() function
-    path = get_download_path()
-
-    # specifying we want to get a CSV file
-    extension = 'csv'
-    os.chdir(path)
-
-    # grabbing a list of files with our specified extension
-    files = glob.glob('*.{}'.format(extension))
-
-    # using mtime to get the latest file by modification time to allow for compatibility on UNIX systems
-    latest_file = max(files, key=os.path.getmtime)
-
-    return latest_file
-
 
 def diffusion_index():
-    csv_file = get_CSV()
+    
+    csv_file = 'OECD.csv'
 
     col_names = ['index', 'Time', 'Country', 'TIME', 'Value', 'Binary']
     diff_index_df = pd.DataFrame(columns=col_names)
@@ -153,7 +126,7 @@ def diffusion_index():
 
 
 def annual_changes():
-    csv_file = get_CSV()
+    csv_file = 'OECD.csv'
 
     df = pd.read_csv(csv_file, low_memory=False, encoding="ISO-8859-1")
 
@@ -362,14 +335,7 @@ class Toplevel1:
 
 
 def main():
-    # running the functions to obtain the newest leading indicators
-    # OECD_scraper()
-    # running the function to obtain the most recently downloaded csv file
-    # map_oecd_data()
-    # second_oecd_scraper()
-    vp_start_gui()
-    # annual_changes()
-    #diffusion_index()
-
+    
+    vp_start_gui() 
 
 main()
