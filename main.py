@@ -1,94 +1,24 @@
-import glob
-import os
-import sys
-import time
-from tkinter import ttk
+def get_query():
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import addcharts
+    URL = 'https://stats.oecd.org/SDMX-JSON/data/MEI_CLI/LOLITOAA.AUT+BEL+EST+FIN+FRA+DEU+GRC+IRL+ITA+LTU+LVA+NLD+PRT+SVK+SVN+ESP+JPN+USA+GBR+MLT+CHN.M/OECD?startTime=1994-01&contentType=csv'
 
-try:
-    import Tkinter as tk
-except ImportError:
-    import tkinter as tk
+    req = Request(URL, headers={'User-Agent': 'XYZ/3.0'})
+    response = urlopen(req, timeout=20)
 
-try:
-    import ttk
+    file = open("OECD.csv","wb")
+    file.write(response.read())
+    file.close()
 
-    py3 = False
-except ImportError:
-    import tkinter.ttk as ttk
+ 
 
-    py3 = True
+    df = pd.read_csv('OECD.csv')
+    df = df[['Country','Time','Value']]
+    df  =df.pivot(index='Time', columns='Country', values='Value') 
 
-import project_support
-import xlsxwriter
-import openpyxl
-from openpyxl import Workbook,load_workbook
+    print(df)
+    df.plot(kind="line",figsize=(10,5))
 
-import calendar
-from datetime import date
-from dateutil.relativedelta import relativedelta
-
-from selenium import webdriver
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
-
-
-def OECD_scraper():
-    # specifying the ChromeDrivers Location
-    driver = webdriver.Chrome('driver/chromedriver.exe')
-
-    # specifying the OECD indicators page we will scrape
-    driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
-
-    # navigating to the csv download button and clicking download
-    element = driver.find_element(By.ID, "export-icon")
-    actions = ActionChains(driver)
-    actions.double_click(element).perform()
-    driver.find_element(By.ID, "ui-menu-0-1").click()
-    driver.switch_to.frame(1)
-    element = driver.find_element(By.ID, "_ctl12_btnExportCSV")
-    actions = ActionChains(driver)
-    actions.double_click(element).perform()
-
-    # waiting a few seconds to allow the page to load
-
-    time.sleep(5)
-    # asking our webdriver to quit
-    driver.quit()
-
-
-def second_oecd_scraper():
-    driver = webdriver.Chrome('driver/chromedriver.exe')
-    driver.get("https://stats.oecd.org/Index.aspx?DataSetCode=MEI_CLI")
-    driver.set_window_size(945, 876)
-
-    element_to_hover_over = driver.find_element_by_id("customize-icon")
-
-    hover = ActionChains(driver).move_to_element(element_to_hover_over)
-    hover.perform()
-
-    driver.find_element_by_link_text('Time & Frequency [24]').click()
-
-    time.sleep(10)
-
-    # Find the outer iframe and switch to it
-    iframe = driver.find_element_by_id('DialogFrame')
-    driver.switch_to.frame(iframe)
-
-    # Find the inner iframe and switch to it
-    iframe = driver.find_element_by_id('TimeSelector')
-    driver.switch_to.frame(iframe)
-
-    # Select number of years wanted
-    # driver.execute_script("document.getElementById('cboRelativeAnnual').getElementsByTagName('option')[10].selected = 'selected'")
-
-    # driver.find_element_by_id('lbtnViewData').click()
-    # driver.execute_script("document.getElementById('lbtnViewData').click()")
+    plt.show()
 
 
 def get_download_path():
@@ -352,13 +282,13 @@ class Toplevel1:
         self.launch_OECD_Btn.configure(activebackground="#ececec")
         self.launch_OECD_Btn.configure(activeforeground="#000000")
         self.launch_OECD_Btn.configure(background="#d9d9d9")
-        self.launch_OECD_Btn.configure(command=second_oecd_scraper)
+        self.launch_OECD_Btn.configure(command=get_query)
         self.launch_OECD_Btn.configure(disabledforeground="#a3a3a3")
         self.launch_OECD_Btn.configure(foreground="#000000")
         self.launch_OECD_Btn.configure(highlightbackground="#d9d9d9")
         self.launch_OECD_Btn.configure(highlightcolor="black")
         self.launch_OECD_Btn.configure(pady="0")
-        self.launch_OECD_Btn.configure(text='''Launch OECD''')
+        self.launch_OECD_Btn.configure(text='''Query OECD''')
 
         self.menubar = tk.Menu(top, font="TkMenuFont", bg=_bgcolor, fg=_fgcolor)
         top.configure(menu=self.menubar)
