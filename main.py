@@ -1,3 +1,47 @@
+import glob
+import os
+import sys
+import time
+from tkinter import ttk
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import addcharts
+
+try:
+    import Tkinter as tk
+except ImportError:
+    import tkinter as tk
+
+try:
+    import ttk
+
+    py3 = False
+except ImportError:
+    import tkinter.ttk as ttk
+
+    py3 = True
+
+import project_support
+import xlsxwriter
+import openpyxl
+from openpyxl import Workbook,load_workbook
+
+import calendar
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
+
+from urllib.request import Request, urlopen
+from datetime import datetime
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+
 def get_query():
 
     URL = 'https://stats.oecd.org/SDMX-JSON/data/MEI_CLI/LOLITOAA.AUT+BEL+EST+FIN+FRA+DEU+GRC+IRL+ITA+LTU+LVA+NLD+PRT+SVK+SVN+ESP+JPN+USA+GBR+MLT+CHN.M/OECD?startTime=1994-01&contentType=csv'
@@ -7,19 +51,11 @@ def get_query():
 
     file = open("OECD.csv","wb")
     file.write(response.read())
-    file.close()
-
- 
+    file.close() 
 
     df = pd.read_csv('OECD.csv')
     df = df[['Country','Time','Value']]
     df  =df.pivot(index='Time', columns='Country', values='Value') 
-
-    print(df)
-    df.plot(kind="line",figsize=(10,5))
-
-    plt.show()
-
 
 def get_download_path():
     # Returns the default downloads path for linux or windows
@@ -32,7 +68,6 @@ def get_download_path():
         return location
     else:
         return os.path.join(os.path.expanduser('~'), 'downloads')
-
 
 def get_CSV():
     # getting the path using our get_download_path() function
